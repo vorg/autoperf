@@ -10,7 +10,7 @@ function compare (files) {
     s += viz(file, json, funcToHighlight, i * 300,)
   })
   var html = `<html><body>${s}</body></html>`
-  fs.writeFileSync(__dirname + '/compare.html', html)
+  fs.writeFileSync('compare.html', html)
 }
 
 module.exports = compare
