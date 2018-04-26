@@ -85,7 +85,7 @@ function parseTraceFile (data) {
         })
       }
       s+= '<span style="color: #111">'
-      s+= chunkSamples.map((s) => `${s.start} ${s.name} / ${s.node.id} / ${s.totalTime} ${s.profileStartTime} ${s.startTime}`).join('\n')
+      s+= chunkSamples.map((s) => `${s.start} ${s.name} / ${s.node.id}`).join('\n')
       s+= '\n'
       //s+= timestamps.join(', ')
       s+= '</span>\n\n'
