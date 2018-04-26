@@ -2,34 +2,36 @@ const loadJSON = require('pex-io/loadJSON')
 const R = require('ramda')
 
 const nodesById = {}
+const traceFile = 'continuous-transition.json'
 
 function printNodeTree (s, node, level) {
   s = s || ''
   level = level || 0
   console.log('node', node, s, level)
-  s += '\n' + '&nbsp;'.repeat(level * 2) + (node.callFrame.functionName || '[unknown]')
+  s += '\n' + '&nbsp;'.repeat(level * 2) + (node.callFrame.functionName || '[unknown]') + ` / ${node.id}`
   node.children.forEach((child) => {
     s += printNodeTree('', child, level + 1)
   })
   return s
 }
 
-loadJSON('continuous-transition.json', (err, data) => {
-  console.log('loaded', err, data)
-  const cats = R.uniq(R.pluck('cat', data.traceEvents))
-  console.log('cats', cats)
-  const traceEvents = data.traceEvents.filter((e) => e.ts)
+const knownEvents = ['Profile', 'ProfileChunk', 'ParseHTML', 'EvaluateScript']
+
+function parseTraceFile (data) {
+  let traceEvents = data.traceEvents
+    .filter((e) => e.ts)
+    .filter((e, i) => knownEvents.includes(e.name) || i == 0 || e.cat === 'disabled-by-default-v8.cpu_profiler')
   traceEvents.sort((a, b) => a.ts - b.ts)
-  const profilerEvents = data.traceEvents.filter(R.propEq('cat', 'disabled-by-default-v8.cpu_profiler'))
-  console.log('profilerEvents', profilerEvents, profilerEvents[1])
-  var pre = document.createElement('div')
-  pre.style.fontFamily = 'monospace'
+  traceEvents = traceEvents.slice(0, 20)
+  // const profilerEvents = data.traceEvents.filter(R.propEq('cat', 'disabled-by-default-v8.cpu_profiler'))
+  // console.log('profilerEvents', profilerEvents, profilerEvents[1])
+  console.log('traceEvents', traceEvents)
   var s = ''
   var prevTime = 0
   var startTime = 0
-  var sampleIndex = 0
   var profileStartTime = 0
   let totalTime = 0
+  const samples = []
   traceEvents.forEach((e, i) => {
     if (!prevTime) {
       prevTime = e.ts
@@ -40,35 +42,14 @@ loadJSON('continuous-transition.json', (err, data) => {
     const deltaTimeMs = (e.ts - prevTime) / 1000
     const startTimeMs = (e.ts - startTime) / 1000
     prevTime = e.ts
-    let duration = 0
-    if (i < traceEvents.length - 1) {
-      duration = traceEvents[i + 1].ts - e.ts
-    }
-    var ok = true
-    if (i < 1260) ok = false
-    if (e.name == 'Profile') ok = true
-    if (e.name == 'ProfileChunk') ok = true
-    if (e.name == 'ParseHTML') ok = true
-    if (e.name == 'EvaluateScript') ok = true
-    if (e.cat == 'disabled-by-default-v8.cpu_profiler') ok = true
-    if (i > 1400) ok = false
-    if (i == 0) ok = true
-    if (!ok) return
-    //duration = 0
-    s += `<b>${startTimeMs}ms : ${e.name} : ${duration}ms</b> #${i} : ${e.ts}\n\n`
+    s += `\n${startTimeMs}ms ${e.name} #${i} : ${e.ts}\n\n`
 
-    if (e.name == 'Profile') {
+    if (e.name === 'Profile') {
       profileStartTime = e.args.data.startTime
     }
-    //top 4.3ms2
-    //second 3.19ms
-    //eachProp 0.62ms
-    //setTimeout 0.64ms
-    //setTimeout 69us
 
-    if (e.args && e.args.data && e.args.data.cpuProfile && sampleIndex < 10) {
+    if (e.args && e.args.data && e.args.data.cpuProfile) {
       const cpuProfile = e.args.data.cpuProfile
-      const samples = []
 
       if (cpuProfile.nodes) {
         cpuProfile.nodes.forEach((node) => {
@@ -83,18 +64,10 @@ loadJSON('continuous-transition.json', (err, data) => {
       }
       let timestamps = []
       if (cpuProfile.samples) {
-        // https://github.com/ChromeDevTools/devtools-frontend/blob/fee00605cada877c1f8e3aae758a0f8d05b64476/front_end/sdk/CPUProfileDataModel.js#L94
-        let lastTimeUsec = e.ts
-        timestamps = new Array(e.args.data.timeDeltas.length + 1);
-        for (let i = 0; i < e.args.data.timeDeltas.length; ++i) {
-          timestamps[i] = lastTimeUsec;
-          lastTimeUsec += e.args.data.timeDeltas[i];
-        }
-        timestamps[e.args.data.timeDeltas.length] = lastTimeUsec
-
         cpuProfile.samples.forEach((sample, j) => {
           totalTime += e.args.data.timeDeltas[j]
           var node = nodesById[sample]
+
           if (!node) return
           samples.push({
             start: (totalTime + profileStartTime - startTime)/1000,
@@ -113,7 +86,13 @@ loadJSON('continuous-transition.json', (err, data) => {
       s+= '</span>\n\n'
     }
   })
-  console.log(nodesById)
+  return s
+}
+
+loadJSON(traceFile, (err, data) => {
+  const s = parseTraceFile(data)
+  var pre = document.createElement('div')
+  pre.style.fontFamily = 'monospace'
   pre.innerHTML = s.replace(/\n/g, '<br/>')
   document.body.appendChild(pre)
 })
