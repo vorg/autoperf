@@ -1,0 +1,18 @@
+{
+  "name": "benchmark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Marcin Ignac <marcin.ignac@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@thi.ng/hdom": "^3.0.9",
+    "@thi.ng/hiccup": "^1.3.9",
+    "pex-io": "^1.5.3",
+    "puppeteer": "^1.3.0",
+    "ramda": "^0.25.0"
+  }
+}
