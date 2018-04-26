@@ -20,8 +20,12 @@ const knownEvents = ['Profile', 'ProfileChunk', 'ParseHTML', 'EvaluateScript']
 function parseTraceFile (data) {
   let traceEvents = data.traceEvents
     .filter((e) => e.ts)
-    .filter((e, i) => knownEvents.includes(e.name) || i == 0 || e.cat === 'disabled-by-default-v8.cpu_profiler')
+
   traceEvents.sort((a, b) => a.ts - b.ts)
+
+  traceEvents = traceEvents
+    .filter((e, i) => knownEvents.includes(e.name) || i == 0 || e.cat === 'disabled-by-default-v8.cpu_profiler')
+
   traceEvents = traceEvents.slice(0, 20)
   // const profilerEvents = data.traceEvents.filter(R.propEq('cat', 'disabled-by-default-v8.cpu_profiler'))
   // console.log('profilerEvents', profilerEvents, profilerEvents[1])
@@ -62,7 +66,6 @@ function parseTraceFile (data) {
           }
         })
       }
-      let timestamps = []
       if (cpuProfile.samples) {
         cpuProfile.samples.forEach((sample, j) => {
           totalTime += e.args.data.timeDeltas[j]
@@ -71,13 +74,16 @@ function parseTraceFile (data) {
           if (!node) return
           samples.push({
             start: (totalTime + profileStartTime - startTime)/1000,
+            totalTime: totalTime,
+            profileStartTime: profileStartTime,
+            startTime: startTime,
             name: node.callFrame.functionName || ['unknown'],
             node: node
           })
         })
       }
       s+= '<span style="color: #111">'
-      s+= samples.map((s) => `${s.start} ${s.name} / ${s.node.id}`).join('\n')
+      s+= samples.map((s) => `${s.start} ${s.name} / ${s.node.id} / ${s.totalTime} ${s.profileStartTime} ${s.startTime}`).join('\n')
       s+= '\n'
       //s+= timestamps.join(', ')
       s+= '</span>\n\n'
