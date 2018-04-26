@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 const puppeteer = require('puppeteer')
 const program = require('commander')
 const pkg = require('./package.json')
