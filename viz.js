@@ -1,7 +1,6 @@
-const loadJSON = require('pex-io/loadJSON')
+// const loadJSON = require('pex-io/loadJSON')
 const R = require('ramda')
 const h = require('@thi.ng/hiccup')
-const random = require('pex-random')
 const colorScale = require('d3-scale-chromatic').interpolateViridis
 
 function printNodeTree (s, node, level) {
@@ -30,7 +29,7 @@ function parseTraceFile (data) {
   // traceEvents = traceEvents.slice(0, 20)
   // const profilerEvents = data.traceEvents.filter(R.propEq('cat', 'disabled-by-default-v8.cpu_profiler'))
   // console.log('profilerEvents', profilerEvents, profilerEvents[1])
-  console.log('traceEvents', traceEvents)
+  // console.log('traceEvents', traceEvents)
   var s = ''
   var prevTime = 0
   var startTime = 0
@@ -108,7 +107,7 @@ function parseTraceFile (data) {
                var nodeThatJunstFinished = callStack.pop()
                var nodeTime = sampleTime - nodeThatJunstFinished.start
                var name = nodeThatJunstFinished.callFrame.functionName
-               console.log(`${name} = ${nodeTime.toFixed(3)}ms`)
+               // console.log(`${name} = ${nodeTime.toFixed(3)}ms`)
                allSamples.push({
                  name: name,
                  depth: callStack.length,
@@ -130,7 +129,7 @@ function parseTraceFile (data) {
             callStack.push(stackToPush.pop())
           }
           var callStackStr = ''//var callStackStr = callStack.map((node) => node.callFrame.functionName).join(', ')
-          console.log('currNode', node.callFrame.functionName, '<-', commonAncestor ? commonAncestor.callFrame.functionName : '', `[${callStackStr}]`)
+          // console.log('currNode', node.callFrame.functionName, '<-', commonAncestor ? commonAncestor.callFrame.functionName : '', `[${callStackStr}]`)
           chunkSamples.push(sample)
         })
       }
@@ -150,9 +149,9 @@ function parseTraceFile (data) {
   }
 }
 
-function graph (traceFile, topOffset) {
+function viz (traceFile, data, searchFor, topOffset) {
   topOffset = topOffset || 0
-  loadJSON(traceFile, (err, data) => {
+  // loadJSON(traceFile, (err, data) => {
     const result = parseTraceFile(data)
     let s = '' //result.str
 
@@ -164,7 +163,7 @@ function graph (traceFile, topOffset) {
     var avgCount = 0
     var bars = result.samples.map((sample) => {
       var bgcolor = colorScale(sample.depth / maxDepth)
-      if (sample.name === 'geomBuilderTrigger') {
+      if (sample.name === searchFor) {
         bgcolor = 'red'
         avg += sample.duration
         avgCount++
@@ -182,7 +181,7 @@ function graph (traceFile, topOffset) {
         }
       }]
     })
-    avg /= avgCount
+    avg /= (avgCount || 1)
     s += h.serialize(['div',
       ['div', {
         style: {
@@ -190,19 +189,22 @@ function graph (traceFile, topOffset) {
           top: `${topOffset}px`,
           left: `5px`
         }
-      }, traceFile + `\ngeomBuilderTrigger avg ${avg.toFixed(3)}ms`],
+      }, traceFile + (searchFor ? (`\n${searchFor} avg ${avg.toFixed(3)}ms`) : '')],
       bars
     ])
-    var pre = document.createElement('div')
-    pre.style.fontFamily = 'monospace'
-    pre.innerHTML = s.replace(/\n/g, '<br/>')
-    document.body.appendChild(pre)
-  })
+    // var pre = document.createElement('div')
+    // pre.style.fontFamily = 'monospace'
+    // pre.innerHTML = s.replace(/\n/g, '<br/>')
+    // document.body.appendChild(pre)
+    return s
+  // })
 }
 
 //graph('continuous-transition.json')
 //graph('continuous-transition-1.json', 300)
 //graph('continuous-transition-2.json', 600)
 
-graph('geom-builder-old.json')
-graph('geom-builder-new.json', 300)
+// graph('geom-builder-old.json')
+// graph('geom-builder-new.json', 300)
+//
+module.exports = viz
