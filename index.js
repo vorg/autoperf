@@ -36,7 +36,6 @@ if (!url) {
   await page.goto(url, { waitUntil: 'networkidle0' })
   await page.waitFor(timeout * 1000)
   await page.tracing.stop()
-  await page.screenshot({path: 'continuous-transition.png'})
 
   await browser.close()
 })()
