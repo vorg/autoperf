@@ -4,7 +4,7 @@ const h = require('@thi.ng/hiccup')
 const colorScale = require('d3-scale-chromatic').interpolateViridis
 
 function printNodeTree (s, node, level) {
-  if (!node) return
+  if (!node || !node.children) return
   s = s || ''
   level = level || 0
   s += '\n' + '&nbsp;'.repeat(level * 2) + (node.callFrame.functionName || '[unknown]') + ` / ${node.id}`
@@ -139,7 +139,7 @@ function parseTraceFile (data) {
       //s+= timestamps.join(', ')
       s+= '</span>\n\n'
       s+= '<span style="color: #999">'
-      s+= printNodeTree('', nodesById[1])
+      // s+= printNodeTree('', nodesById[1])
       s+= '</span>\n\n'
     }
   })
@@ -157,18 +157,19 @@ function viz (traceFile, data, searchFor, topOffset) {
 
     var height = 10
     var wScale = 0.5
-    var maxDepth = result.samples.reduce((maxDepth, sample) => Math.max(maxDepth, sample.depth), 0)
+    var maxDepth = 20//result.samples.reduce((maxDepth, sample) => Math.max(maxDepth, sample.depth), 0)
     var minStart = result.samples.reduce((minStart, sample) => Math.min(minStart, sample.start), Infinity)
     var avg = 0
     var avgCount = 0
     var bars = result.samples.map((sample) => {
-      var bgcolor = colorScale(sample.depth / maxDepth)
+      var bgcolor = colorScale((sample.depth % maxDepth) / maxDepth)
       if (sample.name === searchFor) {
         bgcolor = 'red'
         avg += sample.duration
         avgCount++
       }
       return ['div', {
+        title: `${sample.name} ${sample.duration}ms`,
         style: {
           position: 'absolute',
           left: `${(sample.start - minStart) * wScale}px`,
