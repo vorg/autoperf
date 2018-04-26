@@ -6,6 +6,7 @@ const puppeteer = require('puppeteer')
     headless: false,
     args: [
       '--headless',
+      //'--disable-gpu', // disable disable aka enable
       '--hide-scrollbars',
       '--mute-audio'
     ]
