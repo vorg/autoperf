@@ -35,7 +35,7 @@ function parseTraceFile (data) {
   var startTime = 0
   var profileStartTime = 0
   let totalTime = 0
-  const samples = []
+  const allSamples = []
   traceEvents.forEach((e, i) => {
     if (!prevTime) {
       prevTime = e.ts
@@ -54,7 +54,7 @@ function parseTraceFile (data) {
 
     if (e.args && e.args.data && e.args.data.cpuProfile) {
       const cpuProfile = e.args.data.cpuProfile
-
+      const chunkSamples = []
       if (cpuProfile.nodes) {
         cpuProfile.nodes.forEach((node) => {
           if (!nodesById[node.id]) {
@@ -72,18 +72,20 @@ function parseTraceFile (data) {
           var node = nodesById[sample]
 
           if (!node) return
-          samples.push({
+          var sample = {
             start: (totalTime + profileStartTime - startTime)/1000,
             totalTime: totalTime,
             profileStartTime: profileStartTime,
             startTime: startTime,
             name: node.callFrame.functionName || ['unknown'],
             node: node
-          })
+          }
+          chunkSamples.push(sample)
+          allSamples.push(sample)
         })
       }
       s+= '<span style="color: #111">'
-      s+= samples.map((s) => `${s.start} ${s.name} / ${s.node.id} / ${s.totalTime} ${s.profileStartTime} ${s.startTime}`).join('\n')
+      s+= chunkSamples.map((s) => `${s.start} ${s.name} / ${s.node.id} / ${s.totalTime} ${s.profileStartTime} ${s.startTime}`).join('\n')
       s+= '\n'
       //s+= timestamps.join(', ')
       s+= '</span>\n\n'
